@@ -12,6 +12,7 @@ Transform your [Obsidian](https://obsidian.md) vault into a habit-building power
 - **Maximum configurability** - You can tweak and customize pretty much every aspect of Habit Tracker 21 to make it just right for you
 - **Easy to setup** - Matches your theme effortlessly using Obsidian CSS variables and includes sensible defaults for all tracker properties
 - **Smart Folder Support** - Track individual files or entire habit folders
+- **Daily Note Integration** - Click any date in the header to jump straight to your daily note for that day
 - **Debug Mode** - Comprehensive debugging gives you all the info you need to figure it out
 
 ## Quick Start
@@ -78,6 +79,7 @@ Access via **Settings > Community plugins > Habit Tracker** to set defaults for 
 
 - **Default Path** - Choose from dropdown of vault folders
 - **Days to Show** - Number input (default: 21)
+- **Open daily note on date click** - Click a date in the header row to open the corresponding daily note (default: on). Requires the Daily Notes core plugin or the Periodic Notes community plugin
 - **Debug Mode** - Toggle debug output on/off
 - **Match Line Length** - Fit tracker to readable line width
 
@@ -234,6 +236,11 @@ Enable detailed logging:
 - Trackers auto-refresh when global settings change
 - For JSON errors, check syntax (commas, quotes, braces)
 - If issues persist, try force reload (Ctrl+R) or restart Obsidian
+
+**Clicking a date does nothing**
+
+- Ensure **Open daily note on date click** is enabled in plugin settings
+- Ensure either the **Daily Notes** core plugin or the **Periodic Notes** community plugin is enabled — if neither is active, a notice will appear when you click
 
 **Debug Output**
 Enable debug mode to see detailed logging in the browser console (F12).

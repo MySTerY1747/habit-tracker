@@ -1,10 +1,16 @@
 <script lang="ts">
 	import {debugLog, pluralize, renderPrettyDate} from './utils'
+	import {
+		createDailyNote,
+		getDailyNote,
+		getAllDailyNotes,
+		appHasDailyNotesPluginLoaded,
+	} from 'obsidian-daily-notes-interface'
 	import {onMount, onDestroy} from 'svelte'
 
 	import Habit from './Habit.svelte'
 
-	import {TFile, TFolder, type Plugin} from 'obsidian'
+	import {TFile, TFolder, Notice, type Plugin} from 'obsidian'
 	import {getDateAsString, getDayOfTheWeek} from './utils.js'
 	import {
 		eachDayOfInterval,
@@ -58,6 +64,7 @@
 		matchLineLength: boolean
 		defaultColor: string
 		showStreaks: boolean
+		openDailyNoteOnClick: boolean
 	}
 	export let userSettings: Partial<{
 		path: string
@@ -73,7 +80,9 @@
 	// Default settings - use global settings as defaults
 	const createDefaultSettings = (): HabitTrackerSettings => ({
 		path: globalSettings.path,
-		firstDisplayedDate: globalSettings.firstDisplayedDate || getDateAsString(subDays(new Date(), globalSettings.daysToShow - 1)),
+		firstDisplayedDate:
+			globalSettings.firstDisplayedDate ||
+			getDateAsString(subDays(new Date(), globalSettings.daysToShow - 1)),
 		lastDisplayedDate: getDateAsString(new Date()),
 		daysToShow: globalSettings.daysToShow,
 		debug: globalSettings.debug,
@@ -109,8 +118,12 @@
 		let resolvedSettings = {
 			path: userSettings.path || state.settings.path,
 			firstDisplayedDate: '',
-			lastDisplayedDate: userSettings.lastDisplayedDate || state.settings.lastDisplayedDate,
-			daysToShow: userSettings.daysToShow !== undefined ? userSettings.daysToShow : state.settings.daysToShow,
+			lastDisplayedDate:
+				userSettings.lastDisplayedDate || state.settings.lastDisplayedDate,
+			daysToShow:
+				userSettings.daysToShow !== undefined
+					? userSettings.daysToShow
+					: state.settings.daysToShow,
 			matchLineLength:
 				userSettings.matchLineLength !== undefined
 					? userSettings.matchLineLength
@@ -129,12 +142,18 @@
 			if (hasExplicitLastDate) {
 				const startDate = parseISO(userSettings.firstDisplayedDate!)
 				const endDate = parseISO(userSettings.lastDisplayedDate!)
-				resolvedSettings.daysToShow = eachDayOfInterval({ start: startDate, end: endDate }).length
+				resolvedSettings.daysToShow = eachDayOfInterval({
+					start: startDate,
+					end: endDate,
+				}).length
 			}
 		} else if (hasExplicitDaysToShow || hasExplicitLastDate) {
 			// User provided daysToShow and/or lastDisplayedDate but not firstDisplayedDate - calculate firstDisplayedDate from lastDisplayedDate
 			resolvedSettings.firstDisplayedDate = getDateAsString(
-				subDays(parseISO(resolvedSettings.lastDisplayedDate), resolvedSettings.daysToShow - 1)
+				subDays(
+					parseISO(resolvedSettings.lastDisplayedDate),
+					resolvedSettings.daysToShow - 1,
+				),
 			)
 		} else {
 			// No explicit user settings - use defaults
@@ -240,6 +259,19 @@
 		return true
 	}
 
+	const openDailyNote = async function (date: string) {
+		if (!globalSettings.openDailyNoteOnClick) return
+		if (!appHasDailyNotesPluginLoaded()) {
+			new Notice('Habit Tracker: enable the Daily Notes core plugin or the Periodic Notes community plugin to use this feature.')
+			return
+		}
+		const moment = (window as any).moment(date)
+		const allNotes = getAllDailyNotes()
+		const existingNote = getDailyNote(moment, allNotes)
+		const note = existingNote ?? await createDailyNote(moment)
+		await app.workspace.getLeaf(false).openFile(note)
+	}
+
 	const getHabits = function (path: string): HabitData[] {
 		debugLog(`Loading habits`, state.settings.debug)
 		state.ui.habitSource = app.vault.getAbstractFileByPath(path)
@@ -256,7 +288,9 @@
 				pluginName,
 			)
 			// Sort files alphabetically by name
-			const sortedFiles = filesOnly.sort((a, b) => a.basename.localeCompare(b.basename))
+			const sortedFiles = filesOnly.sort((a, b) =>
+				a.basename.localeCompare(b.basename),
+			)
 			return sortedFiles as HabitData[]
 		}
 
@@ -349,12 +383,15 @@
 		<div class="habit-tracker__header habit-tracker__row">
 			<div class="habit-tracker__cell--name habit-tracker__cell"></div>
 			{#each state.computed.dates as date}
+				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<!-- svelte-ignore a11y-no-static-element-interactions -->
 				<div
 					class="habit-tracker__cell habit-tracker__cell--{getDayOfTheWeek(
 						date,
 					)}"
 					data-ht21-date={date}
 					data-ht21-pretty-date={renderPrettyDate(date)}
+					on:click={() => openDailyNote(date)}
 				>
 					{getDate(parseISO(date))}
 				</div>

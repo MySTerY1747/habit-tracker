@@ -15,6 +15,7 @@ interface HabitTrackerSettings {
 	matchLineLength: boolean;
 	defaultColor: string;
 	showStreaks: boolean;
+	openDailyNoteOnClick: boolean;
 }
 
 const DEFAULT_SETTINGS: HabitTrackerSettings = {
@@ -23,7 +24,8 @@ const DEFAULT_SETTINGS: HabitTrackerSettings = {
 	debug: false,
 	matchLineLength: true,
 	defaultColor: '',
-	showStreaks: true
+	showStreaks: true,
+	openDailyNoteOnClick: true
 }
 
 export default class HabitTracker21 extends Plugin {
@@ -372,6 +374,16 @@ class HabitTrackerSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.showStreaks)
 				.onChange(async (value) => {
 					this.plugin.settings.showStreaks = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Open daily note on date click')
+			.setDesc('Click a date in the header row to open the corresponding daily note. Requires the Daily Notes core plugin or Periodic Notes community plugin.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.openDailyNoteOnClick)
+				.onChange(async (value) => {
+					this.plugin.settings.openDailyNoteOnClick = value;
 					await this.plugin.saveSettings();
 				}));
 
