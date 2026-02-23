@@ -260,11 +260,6 @@
 	}
 
 	const openDailyNote = async function (date: string) {
-		if (!globalSettings.openDailyNoteOnClick) return
-		if (!appHasDailyNotesPluginLoaded()) {
-			new Notice('Habit Tracker: enable the Daily Notes core plugin or the Periodic Notes community plugin to use this feature.')
-			return
-		}
 		const moment = (window as any).moment(date)
 		const allNotes = getAllDailyNotes()
 		const existingNote = getDailyNote(moment, allNotes)
