@@ -15,6 +15,7 @@ interface HabitTrackerSettings {
 	matchLineLength: boolean;
 	defaultColor: string;
 	showStreaks: boolean;
+	maxGap: number;
 	openDailyNoteOnClick: boolean;
 }
 
@@ -25,6 +26,7 @@ const DEFAULT_SETTINGS: HabitTrackerSettings = {
 	matchLineLength: true,
 	defaultColor: '',
 	showStreaks: true,
+	maxGap: 0,
 	openDailyNoteOnClick: true
 }
 
@@ -376,6 +378,27 @@ class HabitTrackerSettingTab extends PluginSettingTab {
 					this.plugin.settings.showStreaks = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+			.setName('Streak gap tolerance')
+			.setDesc('Allow up to this many consecutive missed days without breaking a streak. 0 means any missed day breaks the streak. Can be overridden with "maxGap" in habit frontmatter.')
+			.addText(text => text
+				.setValue(this.plugin.settings.maxGap.toString())
+				.onChange(async (value) => {
+					const numValue = parseInt(value);
+					if (!isNaN(numValue) && numValue >= 0) {
+						this.plugin.settings.maxGap = numValue;
+						await this.plugin.saveSettings();
+					}
+				}))
+			.then(setting => {
+				const inputEl = setting.controlEl.querySelector('input') as HTMLInputElement;
+				if (inputEl) {
+					inputEl.type = 'number';
+					inputEl.min = '0';
+					inputEl.step = '1';
+				}
+			});
 
 		new Setting(containerEl)
 			.setName('Open daily note on date click')

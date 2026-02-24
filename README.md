@@ -12,6 +12,7 @@ Transform your [Obsidian](https://obsidian.md) vault into a habit-building power
 - **Maximum configurability** - You can tweak and customize pretty much every aspect of Habit Tracker 21 to make it just right for you
 - **Easy to setup** - Matches your theme effortlessly using Obsidian CSS variables and includes sensible defaults for all tracker properties
 - **Smart Folder Support** - Track individual files or entire habit folders
+- **Flexible Streak Counting** - Optional gap tolerance (`maxGap`) keeps streaks intact across short breaks while counting only days you actually completed
 - **Daily Note Integration** - Click any date in the header to jump straight to your daily note for that day
 - **Debug Mode** - Comprehensive debugging gives you all the info you need to figure it out
 
@@ -71,6 +72,31 @@ Examples:
 
 Invalid colors are ignored and the default theme color is used.
 
+### Streak Gap Tolerance
+
+By default, a single missed day breaks a streak. Use `maxGap` to keep a streak visually intact across short gaps — useful for habits where occasional misses are acceptable (e.g. a rest day in a workout routine):
+
+```markdown
+---
+title: "Morning Workout 💪"
+maxGap: 1
+entries: []
+---
+```
+
+- The streak bar renders continuously across gap days (shown at reduced opacity)
+- The streak **count** reflects only actual ticked days — gap days are not counted
+- `maxGap: 1` allows 1 missed day, `maxGap: 2` allows 2, and so on
+
+**Examples by habit frequency:**
+
+| Habit | Frequency | `maxGap` | Why |
+| ----- | --------- | -------- | --- |
+| Workout | 3× per week | `3` | Allows up to 3 rest days between sessions (e.g. Mon → Fri) |
+| Clean Puramax | Every 2 weeks | `13` | Up to 13 days can pass between cleanings |
+| Call a friend or family member | Weekly | `6` | One call per week, any day |
+| Car service / deep clean | Monthly | `30` | Up to 30 days between occurrences |
+
 ## Configuration
 
 ### Global Settings
@@ -79,6 +105,8 @@ Access via **Settings > Community plugins > Habit Tracker** to set defaults for 
 
 - **Default Path** - Choose from dropdown of vault folders
 - **Days to Show** - Number input (default: 21)
+- **Show Streaks** - Toggle streak indicators and counts on/off (default: on)
+- **Streak Gap Tolerance** - Default `maxGap` for all habits; can be overridden per habit in frontmatter (default: 0)
 - **Open daily note on date click** - Click a date in the header row to open the corresponding daily note (default: on). Requires the Daily Notes core plugin or the Periodic Notes community plugin
 - **Debug Mode** - Toggle debug output on/off
 - **Match Line Length** - Fit tracker to readable line width
@@ -101,6 +129,8 @@ Override global settings in individual code blocks:
 
 ## All Settings
 
+### Per-Tracker Settings (code block)
+
 | Setting             | Type    | Default | Description                                                                      |
 | ------------------- | ------- | ------- | -------------------------------------------------------------------------------- |
 | `path`              | string  | "/"     | Path to habit folder or file. Defaults to root folder if left empty              |
@@ -109,8 +139,18 @@ Override global settings in individual code blocks:
 | `daysToShow`        | number  | 21      | Number of days to display. Ignored when firstDisplayedDate is explicitly provided |
 | `color`             | string  | ""      | Custom color for this tracker (hex, RGB, or CSS color name)                     |
 | `showStreaks`       | boolean | true    | Display streak indicators and counts                                             |
+| `maxGap`            | number  | 0       | Default streak gap tolerance for all habits. Can be overridden per habit with `maxGap` in frontmatter |
 | `debug`             | boolean | false   | Enable debug console output                                                      |
 | `matchLineLength`   | boolean | false   | Match readable line width                                                        |
+
+### Per-Habit Settings (frontmatter)
+
+| Setting   | Type   | Default | Description                                                                                  |
+| --------- | ------ | ------- | -------------------------------------------------------------------------------------------- |
+| `title`   | string | ""      | Custom display name. Falls back to filename if not set                                       |
+| `color`   | string | ""      | Custom color for this habit (hex, RGB, or CSS color name)                                    |
+| `maxGap`  | number | 0       | Allow up to N consecutive missed days within a streak. Gap days show at reduced opacity; only actual ticked days are counted |
+| `entries` | array  | []      | Array of completed dates in YYYY-MM-DD format. Managed automatically when clicking the grid  |
 
 ## Usage Examples
 
@@ -163,6 +203,26 @@ Override default color for entire tracker:
 }
 ```
 ````
+
+### Streak Gap Tolerance
+
+Allow up to 1 missed day without breaking a streak:
+
+````markdown
+```habittracker
+{
+  "path": "Habits/Exercise.md"
+}
+```
+````
+
+```markdown
+---
+title: "Exercise"
+maxGap: 1
+entries: []
+---
+```
 
 ### Disable Streaks
 

@@ -270,6 +270,7 @@ div:has(.block-language-habittracker) {
 	min-width: var(--habit-cell-width);
 	padding-left: var(--habit-streak-padding);
 	padding-right: var(--habit-streak-padding);
+	line-height: var(--habit-tick-size);
 }
 .habit-tick:hover {
 	cursor: pointer;
@@ -282,7 +283,6 @@ div:has(.block-language-habittracker) {
 	display: inline-block;
 	height: var(--habit-tick-size);
 	transition: all 0.3s ease;
-	line-height: var(--habit-tick-size);
 	color: var(--habit-icon-ticked);
 	border-radius: 50%;
 	width: 100%;
@@ -313,4 +313,16 @@ div:has(.block-language-habittracker) {
 .habit-tick--streak + .habit-tick--streak-end:before {
 	content: attr(streak);
 	font-weight: bold;
+}
+
+.habit-tick--streak-gap:before {
+	background: color-mix(in srgb, var(--habit-bg-ticked) 20%, transparent);
+	content: '';
+	display: inline-block;
+	height: var(--habit-tick-size);
+	width: 100%;
+}
+/* Counter on a gap day: faded background, full-color text */
+.habit-tick--streak-gap.habit-tick--streak-end:before {
+	color: inherit;
 }

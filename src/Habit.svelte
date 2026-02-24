@@ -1,9 +1,10 @@
 <script>
 	import {debugLog, isValidCSSColor} from './utils'
 
+	import {onDestroy} from 'svelte'
 	import {parseYaml, TFile} from 'obsidian'
 	import {getDateAsString, getDayOfTheWeek} from './utils'
-	import {addDays, parseISO} from 'date-fns'
+	import {addDays, differenceInCalendarDays, parseISO} from 'date-fns'
 
 	export let app
 	export let name
@@ -21,21 +22,89 @@
 
 	// Reactive color resolution - updates whenever frontmatter, userSettings, or globalSettings change
 	$: {
-		const resolvedColor = frontmatter.color || userSettings.color || globalSettings.defaultColor
+		const resolvedColor =
+			frontmatter.color || userSettings.color || globalSettings.defaultColor
 		if (resolvedColor && isValidCSSColor(resolvedColor)) {
 			customStyles = `--habit-bg-ticked: ${resolvedColor}`
 		} else {
 			customStyles = ''
 		}
 	}
-	$: entriesInRange = dates.reduce((acc, date) => {
-		const ticked = entries.includes(date)
-		acc[date] = {
-			ticked,
-			streak: findStreak(date),
+	const computeStreakIntervals = function (entries, maxGap) {
+		if (!entries.length) return []
+		const gap = Number(maxGap)
+		const sorted = [...entries].sort()
+		const intervals = []
+		let iStart = 0
+
+		for (let i = 1; i < sorted.length; i++) {
+			const gapDays =
+				differenceInCalendarDays(parseISO(sorted[i]), parseISO(sorted[i - 1])) -
+				1
+			if (gapDays > gap) {
+				const lastTick = sorted[i - 1]
+				intervals.push({
+					start: sorted[iStart],
+					end: getDateAsString(addDays(parseISO(lastTick), gap)),
+					count: i - iStart,
+				})
+				iStart = i
+			}
 		}
-		return acc
-	}, {})
+
+		// Last interval — extend by maxGap days (same as broken intervals)
+		const lastEntry = sorted[sorted.length - 1]
+		intervals.push({
+			start: sorted[iStart],
+			end: getDateAsString(addDays(parseISO(lastEntry), gap)),
+			count: sorted.length - iStart,
+		})
+		return intervals
+	}
+
+	$: entriesInRange = (() => {
+		const maxGap = frontmatter.maxGap ?? globalSettings.maxGap
+
+		if (!maxGap) {
+			return dates.reduce((acc, date) => {
+				const streak = findStreak(date)
+				acc[date] = {
+					ticked: entries.includes(date),
+					streak,
+					inStreak: streak > 0,
+					isStreakStart: streak === 1,
+					isStreakEnd: null, // determined in getClasses for the no-max_gap path
+				}
+				return acc
+			}, {})
+		}
+
+		const intervals = computeStreakIntervals(entries, maxGap)
+		return dates.reduce((acc, date) => {
+			const ticked = entries.includes(date)
+			const interval = intervals.find(
+				(iv) => date >= iv.start && date <= iv.end,
+			)
+			if (interval) {
+				acc[date] = {
+					ticked,
+					streak: date === interval.end ? interval.count : 0,
+					inStreak: true,
+					isStreakStart: date === interval.start,
+					isStreakEnd: date === interval.end,
+				}
+			} else {
+				acc[date] = {
+					ticked,
+					streak: 0,
+					inStreak: false,
+					isStreakStart: false,
+					isStreakEnd: false,
+				}
+			}
+			return acc
+		}, {})
+	})()
 
 	let savingChanges = false
 
@@ -46,32 +115,46 @@
 			'habit-tick',
 		]
 
-		if (entriesInRange[date].ticked) {
+		const {ticked, streak, inStreak, isStreakStart, isStreakEnd} =
+			entriesInRange[date]
+
+		if (ticked) {
 			classes.push('habit-tick--ticked')
 		}
 
 		// Only add streak classes if streaks are enabled
-		const showStreaksEnabled = userSettings.showStreaks !== undefined ? userSettings.showStreaks : globalSettings.showStreaks
+		const showStreaksEnabled =
+			userSettings.showStreaks !== undefined
+				? userSettings.showStreaks
+				: globalSettings.showStreaks
 		if (showStreaksEnabled) {
-			const streak = entriesInRange[date].streak
-			if (streak) {
+			if (inStreak) {
 				classes.push('habit-tick--streak')
 			}
-			if (streak == 1) {
+			if (inStreak && !ticked) {
+				classes.push('habit-tick--streak-gap')
+			}
+			if (isStreakStart) {
 				classes.push('habit-tick--streak-start')
 			}
 
-			let isNextDayTicked = false
-			const nextDate = getDateAsString(addDays(parseISO(date), 1))
-			if (date === dates.at(-1)) {
-				// last in the dates in range
-				isNextDayTicked = entries.includes(nextDate)
+			const maxGap = frontmatter.maxGap ?? globalSettings.maxGap
+			if (maxGap) {
+				if (isStreakEnd) {
+					classes.push('habit-tick--streak-end')
+				}
 			} else {
-				isNextDayTicked = entriesInRange[nextDate].ticked
-			}
-
-			if (entriesInRange[date].ticked && !isNextDayTicked) {
-				classes.push('habit-tick--streak-end')
+				let isNextDayTicked = false
+				const nextDate = getDateAsString(addDays(parseISO(date), 1))
+				if (date === dates.at(-1)) {
+					// last in the dates in range
+					isNextDayTicked = entries.includes(nextDate)
+				} else {
+					isNextDayTicked = entriesInRange[nextDate].ticked
+				}
+				if (ticked && !isNextDayTicked) {
+					classes.push('habit-tick--streak-end')
+				}
 			}
 		}
 
@@ -89,7 +172,6 @@
 
 		return streak
 	}
-
 
 	const init = async function () {
 		debugLog(`Loading habit ${habitName}`, debug, undefined, pluginName)
@@ -111,15 +193,15 @@
 				return await this.app.vault.read(file).then((result) => {
 					const frontmatter = result.split('---')[1]
 
-					if (!frontmatter){
-						return {"entries": []};
+					if (!frontmatter) {
+						return {entries: []}
 					}
 					const fmParsed = parseYaml(frontmatter)
-					if(fmParsed["entries"] == undefined){
-						fmParsed["entries"] = [];
+				if (fmParsed['entries'] == undefined) {
+						fmParsed['entries'] = []
 					}
-					
-					return fmParsed;
+
+					return fmParsed
 				})
 			} catch (error) {
 				debugLog(
@@ -139,20 +221,8 @@
 		entries = entries.sort()
 		habitName = frontmatter.title || habitName
 
-
 		debugLog(`Habit "${habitName}": Found ${entries.length} entries`, debug)
 		debugLog(entries, debug, undefined, pluginName)
-
-		// TODO though this looks to be performing ok, i think i should set the watchers more efficiently
-		app.vault.on('modify', (file) => {
-			if (file.path === path) {
-				if (!savingChanges) {
-					console.log('oh shit, i was modified')
-					init()
-				}
-				savingChanges = false
-			}
-		})
 	}
 
 	const toggleHabit = function (date) {
@@ -178,10 +248,27 @@
 	}
 
 	init()
+
+	const modifyRef = app.vault.on('modify', (file) => {
+		if (file.path === path) {
+			if (!savingChanges) {
+				console.log('oh shit, i was modified')
+				init()
+			}
+			savingChanges = false
+		}
+	})
+
+	onDestroy(() => {
+		app.vault.offref(modifyRef)
+	})
 </script>
 
 <!-- <div bind:this={rootElement}> -->
-<div class="habit-tracker__row" style={customStyles}>
+<div
+	class="habit-tracker__row"
+	style={customStyles}
+>
 	<div class="habit-tracker__cell--name habit-tracker__cell">
 		<a
 			href={path}

@@ -64,6 +64,7 @@
 		matchLineLength: boolean
 		defaultColor: string
 		showStreaks: boolean
+		maxGap: number
 		openDailyNoteOnClick: boolean
 	}
 	export let userSettings: Partial<{
@@ -317,6 +318,13 @@
 
 	// Listen for settings refresh events
 	let refreshEventListener: (event: CustomEvent) => void
+	let vaultCreateRef: any
+	let vaultDeleteRef: any
+	let vaultRenameRef: any
+
+	const isInWatchedPath = (filePath: string) =>
+		filePath === state.settings.path ||
+		filePath.startsWith(state.settings.path + '/')
 
 	onMount(() => {
 		debugLog('Component mounted, setting up refresh listener')
@@ -342,6 +350,17 @@
 		// Listen for refresh events at the document level
 		document.addEventListener('habit-tracker-refresh', refreshEventListener)
 		debugLog('Refresh event listener added to document')
+
+		// Listen for vault file changes that affect the habit list
+		vaultCreateRef = app.vault.on('create', (file) => {
+			if (isInWatchedPath(file.path)) init(userSettings)
+		})
+		vaultDeleteRef = app.vault.on('delete', (file) => {
+			if (isInWatchedPath(file.path)) init(userSettings)
+		})
+		vaultRenameRef = app.vault.on('rename', (file, oldPath) => {
+			if (isInWatchedPath(file.path) || isInWatchedPath(oldPath)) init(userSettings)
+		})
 	})
 
 	onDestroy(() => {
@@ -351,6 +370,9 @@
 				refreshEventListener,
 			)
 		}
+		if (vaultCreateRef) app.vault.offref(vaultCreateRef)
+		if (vaultDeleteRef) app.vault.offref(vaultDeleteRef)
+		if (vaultRenameRef) app.vault.offref(vaultRenameRef)
 	})
 
 	init(userSettings)
