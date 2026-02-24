@@ -114,7 +114,7 @@
 					if (!frontmatter){
 						return {"entries": []};
 					}
-					fmParsed = parseYaml(frontmatter)
+					const fmParsed = parseYaml(frontmatter)
 					if(fmParsed["entries"] == undefined){
 						fmParsed["entries"] = [];
 					}
