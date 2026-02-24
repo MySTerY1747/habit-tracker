@@ -1,6 +1,7 @@
 /* TODO configure most of these from a new settings page */
 /* TODO test it with the default themes in Obsidian, light and dark */
-div:has(.block-language-habittracker) {
+div:has(.block-language-habittracker),
+.ht21-tooltip {
 	/* Colors */
 	--habit-bg: var(--background-primary);
 	--habit-bg-ticked: var(--checkbox-color);
@@ -16,6 +17,7 @@ div:has(.block-language-habittracker) {
 	--habit-tick-hover: var(--color-base-00);
 	--habit-name-text-color: var(--link-color);
 	--habit-header-bg-hover: var(--color-base-100);
+	--habit-tooltip-bg: var(--color-base-100);
 	--habit-header-text-hover: var(--color-base-00);
 
 	/* TODO: make the scroll bar not take vertical space at the bottom at least in synthwave theme */
@@ -32,6 +34,7 @@ div:has(.block-language-habittracker) {
 
 	/* Tick size */
 	--habit-tick-size: 16px;
+	--habit-tick-roundess: calc(var(--habit-tick-size) / 2);
 
 	/* Border radius */
 	--habit-streak-radius: calc(var(--habit-tick-size) / 2);
@@ -50,7 +53,7 @@ div:has(.block-language-habittracker) {
 	left: var(--habit-name-padding);
 	right: var(--habit-name-padding);
 	background: var(--background-secondary);
-	border: var(--habit-border)
+	border: var(--habit-border);
 	border-radius: 0 0 var(--radius-s) var(--radius-s);
 	padding: var(--habit-name-padding);
 	justify-content: space-between;
@@ -169,7 +172,9 @@ div:has(.block-language-habittracker) {
 }
 
 .is-readable-line-width .habit-tracker--match-line-length {
-	min-width: calc(var(--file-line-width) - 2px); /* TODO: this is a hack since I know the widht of the border. but it won't scale. figure out a way to fix this that hopefully doesn't break overrides people added in place */
+	min-width: calc(
+		var(--file-line-width) - 2px
+	); /* TODO: this is a hack since I know the widht of the border. but it won't scale. figure out a way to fix this that hopefully doesn't break overrides people added in place */
 }
 
 .habit-tracker__row {
@@ -277,52 +282,96 @@ div:has(.block-language-habittracker) {
 	background-color: var(--habit-tick-hover) !important;
 }
 
-.habit-tick--ticked:before {
-	background: var(--habit-bg-ticked);
-	content: '';
-	display: inline-block;
+.habit-tick__inner {
+	display: block;
 	height: var(--habit-tick-size);
+	width: 100%;
+}
+
+.habit-tick--ticked .habit-tick__inner {
+	background: var(--habit-bg-ticked);
 	transition: all 0.3s ease;
 	color: var(--habit-icon-ticked);
-	border-radius: 50%;
-	width: 100%;
+	border-radius: var(--habit-tick-roundess);
 }
 
 .habit-tick--streak {
 	padding-left: 0;
 	padding-right: 0;
 }
-.habit-tick--streak:before {
+.habit-tick--streak .habit-tick__inner {
 	border-radius: 0;
 }
 
 .habit-tick--streak-start {
 	padding-left: var(--habit-streak-padding);
 }
-.habit-tick--streak-start:before {
+.habit-tick--streak-start .habit-tick__inner {
 	border-top-left-radius: var(--habit-streak-radius);
 	border-bottom-left-radius: var(--habit-streak-radius);
 }
 .habit-tick--streak-end {
 	padding-right: var(--habit-streak-padding);
 }
-.habit-tick--streak-end:before {
+.habit-tick--streak-end .habit-tick__inner {
 	border-top-right-radius: var(--habit-streak-radius);
 	border-bottom-right-radius: var(--habit-streak-radius);
 }
-.habit-tick--streak + .habit-tick--streak-end:before {
+.habit-tick--streak + .habit-tick--streak-end .habit-tick__inner,
+.habit-tick--streak-count .habit-tick__inner {
 	content: attr(streak);
 	font-weight: bold;
 }
 
-.habit-tick--streak-gap:before {
-	background: color-mix(in srgb, var(--habit-bg-ticked) 20%, transparent);
-	content: '';
-	display: inline-block;
-	height: var(--habit-tick-size);
-	width: 100%;
+.habit-tick--streak-gap .habit-tick__inner {
+	/* background: color-mix(in srgb, var(--habit-bg-ticked) 30%, transparent); */
+	background: var(--habit-bg-ticked);
+	height: 8px;
 }
+.habit-tick--ticked + .habit-tick--streak-gap:before {
+	display: inline-block;
+	content: '';
+	width: calc(var(--habit-tick-size) / 2);
+	height: var(--habit-tick-size);
+	background-color: var(--habit-bg-ticked);
+	border-top-right-radius: var(--habit-tick-roundess);
+	border-bottom-right-radius: var(--habit-tick-roundess);
+	flex: auto 0 0;
+	margin-right: calc(var(--habit-tick-size) / -2);
+}
+.habit-tick--streak-gap:has(+ .habit-tick--ticked):after {
+	display: inline-block;
+	content: '';
+	width: calc(var(--habit-tick-size) / 2);
+	height: var(--habit-tick-size);
+	background-color: var(--habit-bg-ticked);
+	border-top-left-radius: var(--habit-tick-roundess);
+	border-bottom-left-radius: var(--habit-tick-roundess);
+	flex: auto 0 0;
+	margin-left: calc(var(--habit-tick-size) / -2);
+}
+
 /* Counter on a gap day: faded background, full-color text */
-.habit-tick--streak-gap.habit-tick--streak-end:before {
+.habit-tick--streak-gap.habit-tick--streak-end .habit-tick__inner,
+.habit-tick--streak-gap.habit-tick--streak-count .habit-tick__inner {
 	color: inherit;
+}
+
+/* Deadline day: faded tick to hint the streak is about to break */
+.habit-tick--streak-deadline .habit-tick__inner {
+	background: color-mix(in srgb, var(--habit-bg-ticked) 30%, transparent);
+	border-radius: var(--habit-tick-roundess);
+}
+
+.ht21-tooltip {
+	background: var(--habit-tooltip-bg);
+	border-radius: var(--habit-tooltip-radius);
+	color: var(--habit-header-text-hover);
+	font-size: var(--habit-name-font-size);
+	padding: var(--habit-tooltip-padding);
+	pointer-events: none;
+	position: fixed;
+	transform: translate(-50%, -100%);
+	white-space: nowrap;
+	z-index: 1000;
 }

@@ -64,7 +64,6 @@
 		matchLineLength: boolean
 		defaultColor: string
 		showStreaks: boolean
-		maxGap: number
 		openDailyNoteOnClick: boolean
 	}
 	export let userSettings: Partial<{

@@ -3,8 +3,8 @@
 
 	import {onDestroy} from 'svelte'
 	import {parseYaml, TFile} from 'obsidian'
-	import {getDateAsString, getDayOfTheWeek} from './utils'
-	import {addDays, differenceInCalendarDays, parseISO} from 'date-fns'
+	import {getDayOfTheWeek} from './utils'
+	import {differenceInCalendarDays, parseISO, format} from 'date-fns'
 
 	export let app
 	export let name
@@ -19,6 +19,7 @@
 	let frontmatter = {}
 	let habitName = name
 	let customStyles = ''
+	let savingChanges = false // this helps the file change listner know if we made a change. if not, it reloads the data for the habit
 
 	// Reactive color resolution - updates whenever frontmatter, userSettings, or globalSettings change
 	$: {
@@ -30,148 +31,171 @@
 			customStyles = ''
 		}
 	}
-	const computeStreakIntervals = function (entries, maxGap) {
-		if (!entries.length) return []
-		const gap = Number(maxGap)
-		const sorted = [...entries].sort()
-		const intervals = []
-		let iStart = 0
-
-		for (let i = 1; i < sorted.length; i++) {
-			const gapDays =
-				differenceInCalendarDays(parseISO(sorted[i]), parseISO(sorted[i - 1])) -
-				1
-			if (gapDays > gap) {
-				const lastTick = sorted[i - 1]
-				intervals.push({
-					start: sorted[iStart],
-					end: getDateAsString(addDays(parseISO(lastTick), gap)),
-					count: i - iStart,
-				})
-				iStart = i
-			}
-		}
-
-		// Last interval — extend by maxGap days (same as broken intervals)
-		const lastEntry = sorted[sorted.length - 1]
-		intervals.push({
-			start: sorted[iStart],
-			end: getDateAsString(addDays(parseISO(lastEntry), gap)),
-			count: sorted.length - iStart,
-		})
-		return intervals
-	}
-
-	$: entriesInRange = (() => {
-		const maxGap = frontmatter.maxGap ?? globalSettings.maxGap
-
-		if (!maxGap) {
-			return dates.reduce((acc, date) => {
-				const streak = findStreak(date)
-				acc[date] = {
-					ticked: entries.includes(date),
-					streak,
-					inStreak: streak > 0,
-					isStreakStart: streak === 1,
-					isStreakEnd: null, // determined in getClasses for the no-max_gap path
-				}
-				return acc
-			}, {})
-		}
-
-		const intervals = computeStreakIntervals(entries, maxGap)
-		return dates.reduce((acc, date) => {
-			const ticked = entries.includes(date)
-			const interval = intervals.find(
-				(iv) => date >= iv.start && date <= iv.end,
-			)
-			if (interval) {
-				acc[date] = {
-					ticked,
-					streak: date === interval.end ? interval.count : 0,
-					inStreak: true,
-					isStreakStart: date === interval.start,
-					isStreakEnd: date === interval.end,
-				}
-			} else {
-				acc[date] = {
-					ticked,
-					streak: 0,
-					inStreak: false,
-					isStreakStart: false,
-					isStreakEnd: false,
-				}
-			}
-			return acc
-		}, {})
-	})()
-
-	let savingChanges = false
-
-	$: getClasses = function (date) {
-		let classes = [
-			'habit-tracker__cell',
-			`habit-tracker__cell--${getDayOfTheWeek(date)}`,
-			'habit-tick',
-		]
-
-		const {ticked, streak, inStreak, isStreakStart, isStreakEnd} =
-			entriesInRange[date]
-
-		if (ticked) {
-			classes.push('habit-tick--ticked')
-		}
-
-		// Only add streak classes if streaks are enabled
-		const showStreaksEnabled =
+	$: renderedDates = (() => {
+		const maxGap = Number(frontmatter.maxGap) || 0
+		const entrySet = new Set(entries)
+		const showStreaks =
 			userSettings.showStreaks !== undefined
 				? userSettings.showStreaks
 				: globalSettings.showStreaks
-		if (showStreaksEnabled) {
-			if (inStreak) {
-				classes.push('habit-tick--streak')
-			}
-			if (inStreak && !ticked) {
-				classes.push('habit-tick--streak-gap')
-			}
-			if (isStreakStart) {
-				classes.push('habit-tick--streak-start')
-			}
 
-			const maxGap = frontmatter.maxGap ?? globalSettings.maxGap
-			if (maxGap) {
-				if (isStreakEnd) {
-					classes.push('habit-tick--streak-end')
+		// Pass 1 — mark each date
+		const days = dates.map((date) => {
+			const ticked = entrySet.has(date)
+			let gap = false
+			if (!ticked && maxGap > 0) {
+				// Gap only between consecutive entries whose gap ≤ maxGap
+				const parsed = parseISO(date)
+				for (let i = 0; i < entries.length - 1; i++) {
+					const prev = parseISO(entries[i])
+					const next = parseISO(entries[i + 1])
+					if (
+						differenceInCalendarDays(parsed, prev) > 0 &&
+						differenceInCalendarDays(next, parsed) > 0
+					) {
+						if (differenceInCalendarDays(next, prev) - 1 <= maxGap) {
+							gap = true
+						}
+						break
+					}
 				}
-			} else {
-				let isNextDayTicked = false
-				const nextDate = getDateAsString(addDays(parseISO(date), 1))
-				if (date === dates.at(-1)) {
-					// last in the dates in range
-					isNextDayTicked = entries.includes(nextDate)
+			}
+			return {
+				date,
+				ticked,
+				gap,
+				deadline: false,
+				title: '',
+				streakStart: false,
+				streakEnd: false,
+				streakCount: 0,
+				classes: '',
+			}
+		})
+
+		// Pass 2 — identify streak boundaries and counts
+		let streakStartIdx = -1
+		for (let i = 0; i <= days.length; i++) {
+			const inStreak = i < days.length && (days[i].ticked || days[i].gap)
+			if (inStreak && streakStartIdx === -1) {
+				streakStartIdx = i
+			} else if (!inStreak && streakStartIdx !== -1) {
+				// Streak just ended at i-1
+				const endIdx = i - 1
+
+				// Find first and last ticked dates in this visible run
+				let firstTickDate = null
+				let lastTickDate = null
+				for (let j = streakStartIdx; j <= endIdx; j++) {
+					if (days[j].ticked) {
+						if (!firstTickDate) firstTickDate = days[j].date
+						lastTickDate = days[j].date
+					}
+				}
+
+				// streakStart: only if the streak truly begins here
+				// (no entry within maxGap before the first visible date)
+				if (firstTickDate) {
+					const firstTickIdx = entries.indexOf(firstTickDate)
+					const prevEntry = firstTickIdx > 0 ? entries[firstTickIdx - 1] : null
+					const continuesFromBefore =
+						prevEntry &&
+						differenceInCalendarDays(
+							parseISO(firstTickDate),
+							parseISO(prevEntry),
+						) -
+							1 <=
+							maxGap
+					if (!continuesFromBefore) {
+						days[streakStartIdx].streakStart = true
+					}
 				} else {
-					isNextDayTicked = entriesInRange[nextDate].ticked
+					days[streakStartIdx].streakStart = true
 				}
-				if (ticked && !isNextDayTicked) {
-					classes.push('habit-tick--streak-end')
+
+				// streakEnd: only if the streak truly ends within the visible range
+				if (lastTickDate) {
+					const lastTickIdx = entries.indexOf(lastTickDate)
+					const nextEntry =
+						lastTickIdx < entries.length - 1 ? entries[lastTickIdx + 1] : null
+					const continuesAfter =
+						nextEntry &&
+						differenceInCalendarDays(
+							parseISO(nextEntry),
+							parseISO(lastTickDate),
+						) -
+							1 <=
+							maxGap
+					if (!continuesAfter) {
+						days[endIdx].streakEnd = true
+					}
+				} else {
+					days[endIdx].streakEnd = true
+				}
+
+				// Count: walk backward through entries from the last visible tick
+				let count = 0
+				if (lastTickDate) {
+					const anchorIdx = entries.indexOf(lastTickDate)
+					if (anchorIdx !== -1) {
+						count = 1
+						for (let j = anchorIdx; j > 0; j--) {
+							const gapDays =
+								differenceInCalendarDays(
+									parseISO(entries[j]),
+									parseISO(entries[j - 1]),
+								) - 1
+							if (gapDays > maxGap) break
+							count++
+						}
+					}
+				}
+
+				days[endIdx].streakCount = count
+
+				streakStartIdx = -1
+			}
+		}
+
+		// Pass 3 — ghost dot on the last day of the gap (deadline to keep streak alive)
+		if (maxGap > 0 && entries.length > 0) {
+			const today = format(new Date(), 'yyyy-MM-dd')
+			const lastEntry = entries[entries.length - 1]
+			const deadlineDate = format(
+				new Date(parseISO(lastEntry).getTime() + maxGap * 86400000),
+				'yyyy-MM-dd',
+			)
+			if (deadlineDate >= today) {
+				const ghostDay = days.find((d) => d.date === deadlineDate)
+				if (ghostDay && !ghostDay.ticked) {
+					ghostDay.deadline = true
 				}
 			}
 		}
 
-		return classes.join(' ')
-	}
-
-	const findStreak = function (date) {
-		let currentDate = parseISO(date)
-		let streak = 0
-
-		while (entries.includes(getDateAsString(currentDate))) {
-			streak++
-			currentDate.setDate(currentDate.getDate() - 1)
+		// Build classes
+		for (const day of days) {
+			const cls = [
+				'habit-tracker__cell',
+				`habit-tracker__cell--${getDayOfTheWeek(day.date)}`,
+				'habit-tick',
+			]
+			if (day.ticked) cls.push('habit-tick--ticked')
+			if (showStreaks) {
+				const inStrk = day.ticked || day.gap
+				if (inStrk) cls.push('habit-tick--streak')
+				if (day.gap && !day.ticked) cls.push('habit-tick--streak-gap')
+				if (day.streakStart) cls.push('habit-tick--streak-start')
+				if (day.streakEnd) cls.push('habit-tick--streak-end')
+				if (day.streakCount > 0 && !day.streakEnd)
+					cls.push('habit-tick--streak-count')
+				if (day.deadline) cls.push('habit-tick--streak-deadline')
+			}
+			day.classes = cls.join(' ')
 		}
 
-		return streak
-	}
+		return days
+	})()
 
 	const init = async function () {
 		debugLog(`Loading habit ${habitName}`, debug, undefined, pluginName)
@@ -197,7 +221,7 @@
 						return {entries: []}
 					}
 					const fmParsed = parseYaml(frontmatter)
-				if (fmParsed['entries'] == undefined) {
+					if (fmParsed['entries'] == undefined) {
 						fmParsed['entries'] = []
 					}
 
@@ -233,7 +257,7 @@
 		}
 
 		let newEntries = [...entries]
-		if (entriesInRange[date].ticked) {
+		if (entries.includes(date)) {
 			newEntries = newEntries.filter((e) => e !== date)
 		} else {
 			newEntries.push(date)
@@ -249,6 +273,28 @@
 
 	init()
 
+	let tooltipEl = null
+
+	function showTooltip(e, day) {
+		if (!day.deadline) return
+		hideTooltip()
+		const rect = e.currentTarget.getBoundingClientRect()
+
+		tooltipEl = document.body.createDiv({
+			cls: 'ht21-tooltip',
+			text: 'Last day to keep your streak alive!',
+		})
+		tooltipEl.style.left = `${rect.left + rect.width / 2}px`
+		tooltipEl.style.top = `${rect.top - 4}px`
+	}
+
+	function hideTooltip() {
+		if (tooltipEl) {
+			tooltipEl.remove()
+			tooltipEl = null
+		}
+	}
+
 	const modifyRef = app.vault.on('modify', (file) => {
 		if (file.path === path) {
 			if (!savingChanges) {
@@ -261,6 +307,7 @@
 
 	onDestroy(() => {
 		app.vault.offref(modifyRef)
+		hideTooltip()
 	})
 </script>
 
@@ -276,16 +323,22 @@
 			class="internal-link">{habitName}</a
 		>
 	</div>
-	{#if Object.keys(entriesInRange).length}
-		{#each dates as date}
+	{#if renderedDates.length}
+		{#each renderedDates as day}
 			<!-- svelte-ignore a11y-no-static-element-interactions -->
 			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<div
-				class={getClasses(date)}
-				ticked={entriesInRange[date].ticked}
-				streak={entriesInRange[date].streak}
-				on:click={() => toggleHabit(date)}
-			></div>
+				class={day.classes}
+				ticked={day.ticked}
+				on:mouseenter={(e) => showTooltip(e, day)}
+				on:mouseleave={hideTooltip}
+				on:click={() => toggleHabit(day.date)}
+			>
+				<span
+					class="habit-tick__inner"
+					streak={day.streakCount}
+				></span>
+			</div>
 		{/each}
 	{/if}
 </div>

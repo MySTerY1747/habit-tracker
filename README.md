@@ -106,7 +106,6 @@ Access via **Settings > Community plugins > Habit Tracker** to set defaults for 
 - **Default Path** - Choose from dropdown of vault folders
 - **Days to Show** - Number input (default: 21)
 - **Show Streaks** - Toggle streak indicators and counts on/off (default: on)
-- **Streak Gap Tolerance** - Default `maxGap` for all habits; can be overridden per habit in frontmatter (default: 0)
 - **Open daily note on date click** - Click a date in the header row to open the corresponding daily note (default: on). Requires the Daily Notes core plugin or the Periodic Notes community plugin
 - **Debug Mode** - Toggle debug output on/off
 - **Match Line Length** - Fit tracker to readable line width
@@ -139,7 +138,6 @@ Override global settings in individual code blocks:
 | `daysToShow`        | number  | 21      | Number of days to display. Ignored when firstDisplayedDate is explicitly provided |
 | `color`             | string  | ""      | Custom color for this tracker (hex, RGB, or CSS color name)                     |
 | `showStreaks`       | boolean | true    | Display streak indicators and counts                                             |
-| `maxGap`            | number  | 0       | Default streak gap tolerance for all habits. Can be overridden per habit with `maxGap` in frontmatter |
 | `debug`             | boolean | false   | Enable debug console output                                                      |
 | `matchLineLength`   | boolean | false   | Match readable line width                                                        |
 
