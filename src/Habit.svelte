@@ -162,7 +162,7 @@
 			const today = format(new Date(), 'yyyy-MM-dd')
 			const lastEntry = entries[entries.length - 1]
 			const deadlineDate = format(
-				new Date(parseISO(lastEntry).getTime() + maxGap * 86400000),
+				new Date(parseISO(lastEntry).getTime() + (maxGap + 1) * 86400000),
 				'yyyy-MM-dd',
 			)
 			if (deadlineDate >= today) {
