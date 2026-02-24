@@ -263,7 +263,7 @@
 		const moment = (window as any).moment(date)
 		const allNotes = getAllDailyNotes()
 		const existingNote = getDailyNote(moment, allNotes)
-		const note = existingNote ?? await createDailyNote(moment)
+		const note = existingNote ?? (await createDailyNote(moment))
 		await app.workspace.getLeaf(false).openFile(note)
 	}
 
@@ -358,7 +358,8 @@
 			if (isInWatchedPath(file.path)) init(userSettings)
 		})
 		vaultRenameRef = app.vault.on('rename', (file, oldPath) => {
-			if (isInWatchedPath(file.path) || isInWatchedPath(oldPath)) init(userSettings)
+			if (isInWatchedPath(file.path) || isInWatchedPath(oldPath))
+				init(userSettings)
 		})
 	})
 
