@@ -375,3 +375,7 @@ div:has(.block-language-habittracker),
 	white-space: nowrap;
 	z-index: 1000;
 }
+
+.habit-tracker__header .habit-tracker__cell--today {
+	color: var(--habit-name-text-color);
+}
