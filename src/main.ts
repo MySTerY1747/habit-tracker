@@ -2,7 +2,7 @@
 import {Plugin, Notice, setIcon, App, PluginSettingTab, Setting} from 'obsidian'
 import HabitTracker from './HabitTracker.svelte'
 import HabitTrackerError from './HabitTrackerError.svelte'
-import { debugLog, renderPrettyDate, isValidCSSColor } from './utils'
+import { debugLog, isValidCSSColor } from './utils'
 
 	import {
 		format,

@@ -32,12 +32,11 @@ const renderPrettyDate = function (dateString) {
 		// Parse the input date string into a Date object
 		const date = parseISO(dateString)
 
-		// Format the date using date-fns
-		let prettyDate = format(date, 'MMMM d, yyyy')
+		let prettyDate = window.moment(date).format('ll')
 
-		if (isToday(date)) {
-			prettyDate = `Today, ${prettyDate}`
-		}
+		let prefix = isToday(date) ? 'Today' : window.moment(date).format('ddd')
+
+		prettyDate = `${prefix}, ${prettyDate}`;
 
 		return prettyDate
 	}
