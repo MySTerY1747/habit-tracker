@@ -322,6 +322,7 @@
 	let vaultCreateRef: any
 	let vaultDeleteRef: any
 	let vaultRenameRef: any
+	let midnightTimer: ReturnType<typeof setTimeout>
 
 	const isInWatchedPath = (filePath: string) =>
 		filePath === state.settings.path ||
@@ -352,6 +353,20 @@
 		document.addEventListener('habit-tracker-refresh', refreshEventListener)
 		debugLog('Refresh event listener added to document')
 
+		// Schedule reload at midnight so dates stay current
+		const scheduleMidnightReload = () => {
+			const now = new Date()
+			const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+			const msUntilMidnight = midnight.getTime() - now.getTime()
+			midnightTimer = setTimeout(() => {
+				debugLog('Midnight reload triggered', state.settings.debug)
+				state.settings = createDefaultSettings()
+				init(userSettings)
+				scheduleMidnightReload()
+			}, msUntilMidnight)
+		}
+		scheduleMidnightReload()
+
 		// Listen for vault file changes that affect the habit list
 		vaultCreateRef = app.vault.on('create', (file) => {
 			if (isInWatchedPath(file.path)) init(userSettings)
@@ -375,6 +390,7 @@
 		if (vaultCreateRef) app.vault.offref(vaultCreateRef)
 		if (vaultDeleteRef) app.vault.offref(vaultDeleteRef)
 		if (vaultRenameRef) app.vault.offref(vaultRenameRef)
+		if (midnightTimer) clearTimeout(midnightTimer)
 	})
 
 	init(userSettings)
