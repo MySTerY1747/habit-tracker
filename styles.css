@@ -319,7 +319,6 @@ div:has(.block-language-habittracker),
 }
 .habit-tick--streak + .habit-tick--streak-end .habit-tick__inner,
 .habit-tick--streak-count .habit-tick__inner {
-	content: attr(streak);
 	font-weight: bold;
 }
 
@@ -328,7 +327,7 @@ div:has(.block-language-habittracker),
 	background: var(--habit-bg-ticked);
 	height: 8px;
 }
-.habit-tick--ticked + .habit-tick--streak-gap:before {
+.habit-tick--ticked + .habit-tick--gap-default:before {
 	display: inline-block;
 	content: '';
 	width: calc(var(--habit-tick-size) / 2);
@@ -339,7 +338,7 @@ div:has(.block-language-habittracker),
 	flex: auto 0 0;
 	margin-right: calc(var(--habit-tick-size) / -2);
 }
-.habit-tick--streak-gap:has(+ .habit-tick--ticked):after {
+.habit-tick--gap-default:has(+ .habit-tick--ticked):after {
 	display: inline-block;
 	content: '';
 	width: calc(var(--habit-tick-size) / 2);
@@ -349,6 +348,12 @@ div:has(.block-language-habittracker),
 	border-bottom-left-radius: var(--habit-tick-roundess);
 	flex: auto 0 0;
 	margin-left: calc(var(--habit-tick-size) / -2);
+}
+
+/* Faded gap style: full-height transparent bar instead of short bar with transitions */
+.habit-tick--gap-faded .habit-tick__inner {
+	background: color-mix(in srgb, var(--habit-bg-ticked) 30%, transparent);
+	height: var(--habit-tick-size);
 }
 
 /* Counter on a gap day: faded background, full-color text */

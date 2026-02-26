@@ -38,6 +38,10 @@
 			userSettings.showStreaks !== undefined
 				? userSettings.showStreaks
 				: globalSettings.showStreaks
+		const gapStyle =
+			userSettings.gapStyle !== undefined
+				? userSettings.gapStyle
+				: globalSettings.gapStyle
 
 		// Pass 1 — mark each date
 		const days = dates.map((date) => {
@@ -184,7 +188,10 @@
 			if (showStreaks) {
 				const inStrk = day.ticked || day.gap
 				if (inStrk) cls.push('habit-tick--streak')
-				if (day.gap && !day.ticked) cls.push('habit-tick--streak-gap')
+				if (day.gap && !day.ticked) {
+					cls.push('habit-tick--streak-gap')
+					cls.push(gapStyle === 'faded' ? 'habit-tick--gap-faded' : 'habit-tick--gap-default')
+				}
 				if (day.streakStart) cls.push('habit-tick--streak-start')
 				if (day.streakEnd) cls.push('habit-tick--streak-end')
 				if (day.streakCount > 0 && !day.streakEnd)
@@ -336,8 +343,7 @@
 			>
 				<span
 					class="habit-tick__inner"
-					streak={day.streakCount}
-				></span>
+				>{#if day.streakEnd && day.streakCount > 1}{day.streakCount}{/if}</span>
 			</div>
 		{/each}
 	{/if}

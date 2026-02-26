@@ -16,6 +16,7 @@ interface HabitTrackerSettings {
 	defaultColor: string;
 	showStreaks: boolean;
 	openDailyNoteOnClick: boolean;
+	gapStyle: string;
 }
 
 const DEFAULT_SETTINGS: HabitTrackerSettings = {
@@ -25,7 +26,8 @@ const DEFAULT_SETTINGS: HabitTrackerSettings = {
 	matchLineLength: true,
 	defaultColor: '',
 	showStreaks: true,
-	openDailyNoteOnClick: true
+	openDailyNoteOnClick: true,
+	gapStyle: 'default'
 }
 
 export default class HabitTracker21 extends Plugin {
@@ -374,6 +376,18 @@ class HabitTrackerSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.showStreaks)
 				.onChange(async (value) => {
 					this.plugin.settings.showStreaks = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Gap style')
+			.setDesc('How gap days are displayed in streaks. Can be overridden with "gapStyle" in code blocks.')
+			.addDropdown(dropdown => dropdown
+				.addOption('default', 'Default')
+				.addOption('faded', 'Faded')
+				.setValue(this.plugin.settings.gapStyle)
+				.onChange(async (value) => {
+					this.plugin.settings.gapStyle = value;
 					await this.plugin.saveSettings();
 				}));
 

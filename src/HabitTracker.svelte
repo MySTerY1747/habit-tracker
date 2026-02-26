@@ -63,8 +63,9 @@
 		debug: boolean
 		matchLineLength: boolean
 		defaultColor: string
-		showStreaks: boolean
+		showStreaks: boolean	
 		openDailyNoteOnClick: boolean
+		gapStyle: string
 	}
 	export let userSettings: Partial<{
 		path: string
@@ -75,6 +76,7 @@
 		matchLineLength: boolean
 		color: string
 		showStreaks: boolean
+		gapStyle: string
 	}>
 
 	// Default settings - use global settings as defaults
