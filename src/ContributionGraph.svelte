@@ -204,9 +204,8 @@
 				class="contribution-graph__grid"
 				style="--graph-weeks: {graph.weeks.length}"
 			>
-				{#each {length: 7} as _, dayIndex}
-					{#each graph.weeks as week}
-						{@const cell = week[dayIndex]}
+				{#each graph.weeks as week}
+					{#each week as cell}
 						<!-- svelte-ignore a11y-click-events-have-key-events -->
 						<!-- svelte-ignore a11y-no-static-element-interactions -->
 						<div
