@@ -58,11 +58,11 @@
 				const isInRange = !isBefore(cellDate, firstDate) && !isAfter(cellDate, lastDate)
 				const ticked = isInRange && entrySet.has(dateStr)
 
-				// Track month label for the first day of each month that appears in a week
-				if (dayOfWeek === 0 || format(cellDate, 'd') === '1') {
-					if (format(cellDate, 'd') === '1' || weekIndex === 0) {
-						weekMonthLabel = format(cellDate, 'MMM')
-					}
+				// Show month label on the first week, or when a new month starts
+				if (weekIndex === 0 && dayOfWeek === 0) {
+					weekMonthLabel = format(cellDate, 'MMM')
+				} else if (format(cellDate, 'd') === '1') {
+					weekMonthLabel = format(cellDate, 'MMM')
 				}
 
 				week.push({
@@ -72,7 +72,7 @@
 				})
 			}
 
-			if (weekMonthLabel && (weeks.length === 0 || monthLabels[monthLabels.length - 1]?.label !== weekMonthLabel)) {
+			if (weekMonthLabel && monthLabels[monthLabels.length - 1]?.label !== weekMonthLabel) {
 				monthLabels.push({weekIndex, label: weekMonthLabel})
 			}
 
