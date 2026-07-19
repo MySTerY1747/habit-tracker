@@ -20,6 +20,7 @@
 		isToday,
 		parseISO,
 		subDays,
+		startOfWeek,
 	} from 'date-fns'
 
 	// TypeScript interfaces for better state management
@@ -30,7 +31,8 @@
 		daysToShow: number
 		debug: boolean
 		matchLineLength: boolean
-		mode: string
+		mode: 'default' | 'graph'
+		fillToPreviousMonday: boolean
 	}
 
 	interface HabitData {
@@ -65,10 +67,11 @@
 		debug: boolean
 		matchLineLength: boolean
 		defaultColor: string
-		showStreaks: boolean	
+		showStreaks: boolean
 		openDailyNoteOnClick: boolean
 		gapStyle: string
-		mode: string
+		mode: 'default' | 'graph'
+		fillToPreviousMonday: boolean
 	}
 	export let userSettings: Partial<{
 		path: string
@@ -80,8 +83,15 @@
 		color: string
 		showStreaks: boolean
 		gapStyle: string
-		mode: string
+		mode: 'default' | 'graph'
+		fillToPreviousMonday: boolean
 	}>
+
+	const resolveBoolean = (value: unknown, fallback: boolean): boolean => {
+		if (value === true || value === 'true') return true
+		if (value === false || value === 'false') return false
+		return fallback
+	}
 
 	// Default settings - use global settings as defaults
 	const createDefaultSettings = (): HabitTrackerSettings => ({
@@ -94,6 +104,10 @@
 		debug: globalSettings.debug,
 		matchLineLength: globalSettings.matchLineLength,
 		mode: globalSettings.mode || 'default',
+		fillToPreviousMonday: resolveBoolean(
+			globalSettings.fillToPreviousMonday,
+			true,
+		),
 	})
 
 	// Initialize unified state
@@ -143,6 +157,10 @@
 				userSettings.mode !== undefined
 					? userSettings.mode
 					: state.settings.mode,
+			fillToPreviousMonday: resolveBoolean(
+				userSettings.fillToPreviousMonday,
+				state.settings.fillToPreviousMonday,
+			),
 		}
 
 		// Apply smart firstDisplayedDate logic
@@ -172,6 +190,17 @@
 		}
 
 		state.settings = resolvedSettings
+
+		// If graph mode and fillToPreviousMonday is true, push the tracked data range back to Monday
+		if (
+			state.settings.mode === 'graph' &&
+			state.settings.fillToPreviousMonday
+		) {
+			const firstDateObj = parseISO(state.settings.firstDisplayedDate)
+			state.settings.firstDisplayedDate = getDateAsString(
+				startOfWeek(firstDateObj, {weekStartsOn: 1}),
+			)
+		}
 
 		// Only validate essential business logic
 		try {
@@ -382,7 +411,11 @@
 		// Schedule reload at midnight so dates stay current
 		const scheduleMidnightReload = () => {
 			const now = new Date()
-			const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+			const midnight = new Date(
+				now.getFullYear(),
+				now.getMonth(),
+				now.getDate() + 1,
+			)
 			const msUntilMidnight = midnight.getTime() - now.getTime()
 			midnightTimer = setTimeout(() => {
 				debugLog('Midnight reload triggered', state.settings.debug)
@@ -435,7 +468,9 @@
 	No habits to show at "{state.settings.path}"
 {:else if state.settings.mode === 'graph'}
 	<div
-		class="habit-tracker-graph {state.settings.matchLineLength ? 'habit-tracker-graph--match-line-length' : ''}"
+		class="habit-tracker-graph {state.settings.matchLineLength
+			? 'habit-tracker-graph--match-line-length'
+			: ''}"
 		bind:this={state.ui.rootElement}
 	>
 		{#each state.computed.habits as habit}
@@ -445,6 +480,7 @@
 				dates={state.computed.dates}
 				debug={state.settings.debug}
 				onGraphScroll={syncGraphScroll}
+				fillToPreviousMonday={state.settings.fillToPreviousMonday}
 				{app}
 				{pluginName}
 				{userSettings}

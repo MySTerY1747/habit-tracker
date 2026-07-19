@@ -109,6 +109,7 @@ Access via **Settings > Community plugins > Habit Tracker** to set defaults for 
 - **Show Streaks** - Toggle streak indicators and counts on/off (default: on)
 - **Open daily note on date click** - Click a date in the header row to open the corresponding daily note (default: on). Requires the Daily Notes core plugin or the Periodic Notes community plugin
 - **Display Mode** - Choose between "Default" (grid) and "Contribution Graph" (GitHub-style graph). Can be overridden per-tracker with `"mode"` in code blocks
+- **Fill graph to previous Monday** - In contribution graph mode, extend the visible range back to Monday so the graph stays square (default: on). This may show a few extra days before `firstDisplayedDate`/`daysToShow`. Can be overridden per-tracker with `"fillToPreviousMonday"` in code blocks
 - **Debug Mode** - Toggle debug output on/off
 - **Match Line Length** - Fit tracker to readable line width
 
@@ -142,6 +143,7 @@ Override global settings in individual code blocks:
 | `showStreaks`       | boolean | true    | Display streak indicators and counts                                             |
 | `debug`             | boolean | false   | Enable debug console output                                                      |
 | `mode`              | string  | "default" | Display mode: `"default"` for grid view, `"graph"` for GitHub-style contribution graph |
+| `fillToPreviousMonday` | boolean | true | In graph mode, extend the visible range back to Monday for a square graph layout (may add a few extra leading days) |
 | `matchLineLength`   | boolean | false   | Match readable line width                                                        |
 
 ### Per-Habit Settings (frontmatter)
@@ -274,7 +276,8 @@ Display habits as a GitHub-style contribution graph:
 ```habittracker
 {
   "path": "Habits",
-  "mode": "graph"
+  "mode": "graph",
+  "fillToPreviousMonday": true
 }
 ```
 ````
