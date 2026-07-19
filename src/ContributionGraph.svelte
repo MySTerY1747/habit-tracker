@@ -8,7 +8,16 @@
 
 	import {onDestroy} from 'svelte'
 	import {parseYaml, TFile} from 'obsidian'
-	import {parseISO, format, startOfWeek, addDays, isBefore, isAfter, isSameDay, isToday} from 'date-fns'
+	import {
+		parseISO,
+		format,
+		startOfWeek,
+		addDays,
+		isBefore,
+		isAfter,
+		isSameDay,
+		isToday,
+	} from 'date-fns'
 
 	export let app
 	export let name
@@ -59,14 +68,18 @@
 		let weekIndex = 0
 		let previousColumnMonth = ''
 
-		while (isBefore(currentDate, lastDate) || isSameDay(currentDate, lastDate)) {
+		while (
+			isBefore(currentDate, lastDate) ||
+			isSameDay(currentDate, lastDate)
+		) {
 			const week = []
 			const inRangeDates = []
 
 			for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
 				const cellDate = addDays(currentDate, dayOfWeek)
 				const dateStr = format(cellDate, 'yyyy-MM-dd')
-				const isInRange = !isBefore(cellDate, firstDate) && !isAfter(cellDate, lastDate)
+				const isInRange =
+					!isBefore(cellDate, firstDate) && !isAfter(cellDate, lastDate)
 				const renderedDay = renderedDates.byDate.get(dateStr)
 				if (isInRange) inRangeDates.push(cellDate)
 
@@ -126,7 +139,7 @@
 		debugLog(`Loading habit ${habitName}`, debug, undefined, pluginName)
 
 		const getFrontmatter = async function (path) {
-			const file = this.app.vault.getAbstractFileByPath(path)
+			const file = app.vault.getAbstractFileByPath(path)
 
 			if (!file || !(file instanceof TFile)) {
 				debugLog(
@@ -139,7 +152,7 @@
 			}
 
 			try {
-				return await this.app.vault.read(file).then((result) => {
+				return await app.vault.read(file).then((result) => {
 					const frontmatter = result.split('---')[1]
 
 					if (!frontmatter) {
@@ -175,7 +188,7 @@
 	}
 
 	const toggleHabit = function (date) {
-		const file = this.app.vault.getAbstractFileByPath(path)
+		const file = app.vault.getAbstractFileByPath(path)
 		if (!file || !(file instanceof TFile)) {
 			return
 		}
@@ -190,7 +203,7 @@
 
 		savingChanges = true
 
-		this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+		app.fileManager.processFrontMatter(file, (frontmatter) => {
 			frontmatter['entries'] = entries
 		})
 	}
@@ -209,7 +222,6 @@
 	onDestroy(() => {
 		app.vault.offref(modifyRef)
 	})
-
 </script>
 
 <div class="contribution-graph">
@@ -220,13 +232,20 @@
 			class="internal-link contribution-graph__name">{habitName}</a
 		>
 	</div>
-	<div class="contribution-graph__body" on:scroll={(e) => onGraphScroll(e.currentTarget)}>
-		<div class="contribution-graph__grid-wrapper" style="--graph-weeks: {graph.weeks.length}">
+	<div
+		class="contribution-graph__body"
+		on:scroll={(e) => onGraphScroll(e.currentTarget)}
+	>
+		<div
+			class="contribution-graph__grid-wrapper"
+			style="--graph-weeks: {graph.weeks.length}"
+		>
 			<div class="contribution-graph__month-labels">
 				{#each graph.monthLabels as monthLabel}
 					<div
 						class="contribution-graph__month-label"
-						style="grid-column: {monthLabel.weekIndex + 1} / {monthLabel.endWeekIndex + 1}"
+						style="grid-column: {monthLabel.weekIndex +
+							1} / {monthLabel.endWeekIndex + 1}"
 					>
 						{monthLabel.label}
 					</div>
@@ -245,12 +264,16 @@
 							class:contribution-graph__cell--today={cell.today}
 							class:contribution-graph__cell--streak-end={cell.streakEnd}
 							class:contribution-graph__cell--empty={!cell.isInRange}
-							style={cell.ticked || cell.gap || cell.deadline || cell.today ? cellStyle : ''}
+							style={cell.ticked || cell.gap || cell.deadline || cell.today
+								? cellStyle
+								: ''}
 							title={cell.isInRange ? cell.date : ''}
 							on:click={() => cell.isInRange && toggleHabit(cell.date)}
 						>
 							{#if cell.streakEnd}
-								<span class="contribution-graph__streak-count">{cell.streakCount}</span>
+								<span class="contribution-graph__streak-count"
+									>{cell.streakCount}</span
+								>
 							{/if}
 						</div>
 					{/each}

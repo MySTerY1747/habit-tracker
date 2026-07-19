@@ -1,5 +1,10 @@
 <script>
-	import {debugLog, isValidCSSColor, getDayOfTheWeek, computeHabitRenderedDays} from './utils'
+	import {
+		debugLog,
+		isValidCSSColor,
+		getDayOfTheWeek,
+		computeHabitRenderedDays,
+	} from './utils'
 
 	import {onDestroy} from 'svelte'
 	import {parseYaml, TFile} from 'obsidian'
@@ -41,10 +46,12 @@
 				? userSettings.gapStyle
 				: globalSettings.gapStyle
 
-		const days = computeHabitRenderedDays({dates, entries, maxGap}).map((day) => ({
-			...day,
-			classes: '',
-		}))
+		const days = computeHabitRenderedDays({dates, entries, maxGap}).map(
+			(day) => ({
+				...day,
+				classes: '',
+			}),
+		)
 
 		// Build classes
 		for (const day of days) {
@@ -59,7 +66,11 @@
 				if (inStrk) cls.push('habit-tick--streak')
 				if (day.gap && !day.ticked) {
 					cls.push('habit-tick--streak-gap')
-					cls.push(gapStyle === 'faded' ? 'habit-tick--gap-faded' : 'habit-tick--gap-default')
+					cls.push(
+						gapStyle === 'faded'
+							? 'habit-tick--gap-faded'
+							: 'habit-tick--gap-default',
+					)
 				}
 				if (day.streakStart) cls.push('habit-tick--streak-start')
 				if (day.streakEnd) cls.push('habit-tick--streak-end')
@@ -77,7 +88,7 @@
 		debugLog(`Loading habit ${habitName}`, debug, undefined, pluginName)
 
 		const getFrontmatter = async function (path) {
-			const file = this.app.vault.getAbstractFileByPath(path)
+			const file = app.vault.getAbstractFileByPath(path)
 
 			if (!file || !(file instanceof TFile)) {
 				debugLog(
@@ -90,7 +101,7 @@
 			}
 
 			try {
-				return await this.app.vault.read(file).then((result) => {
+				return await app.vault.read(file).then((result) => {
 					const frontmatter = result.split('---')[1]
 
 					if (!frontmatter) {
@@ -117,7 +128,7 @@
 		frontmatter = await getFrontmatter(path)
 		debugLog(`Frontmatter for ${path} ↴`, debug)
 		debugLog(frontmatter, debug)
-		entries = frontmatter.entries
+		entries = frontmatter.entries || []
 		entries = entries.sort()
 		habitName = frontmatter.title || habitName
 
@@ -126,7 +137,7 @@
 	}
 
 	const toggleHabit = function (date) {
-		const file = this.app.vault.getAbstractFileByPath(path)
+		const file = app.vault.getAbstractFileByPath(path)
 		if (!file || !(file instanceof TFile)) {
 			new Notice(`${pluginName}: file missing while trying to toggle habit`)
 			return
@@ -142,7 +153,7 @@
 
 		savingChanges = true
 
-		this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+		app.fileManager.processFrontMatter(file, (frontmatter) => {
 			frontmatter['entries'] = entries
 		})
 	}
@@ -210,9 +221,9 @@
 				on:mouseleave={hideTooltip}
 				on:click={() => toggleHabit(day.date)}
 			>
-				<span
-					class="habit-tick__inner"
-				>{#if showStreaks && day.streakEnd && day.streakCount > 1}{day.streakCount}{/if}</span>
+				<span class="habit-tick__inner"
+					>{#if showStreaks && day.streakEnd && day.streakCount > 1}{day.streakCount}{/if}</span
+				>
 			</div>
 		{/each}
 	{/if}

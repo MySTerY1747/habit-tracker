@@ -19,7 +19,6 @@
 		getDate,
 		isToday,
 		parseISO,
-		startOfWeek,
 		subDays,
 	} from 'date-fns'
 
@@ -31,7 +30,7 @@
 		daysToShow: number
 		debug: boolean
 		matchLineLength: boolean
-		mode: string
+		mode: 'default' | 'graph'
 		fillToPreviousMonday: boolean
 	}
 
@@ -67,10 +66,10 @@
 		debug: boolean
 		matchLineLength: boolean
 		defaultColor: string
-		showStreaks: boolean	
+		showStreaks: boolean
 		openDailyNoteOnClick: boolean
 		gapStyle: string
-		mode: string
+		mode: 'default' | 'graph'
 		fillToPreviousMonday: boolean
 	}
 	export let userSettings: Partial<{
@@ -83,7 +82,7 @@
 		color: string
 		showStreaks: boolean
 		gapStyle: string
-		mode: string
+		mode: 'default' | 'graph'
 		fillToPreviousMonday: boolean
 	}>
 
@@ -104,7 +103,10 @@
 		debug: globalSettings.debug,
 		matchLineLength: globalSettings.matchLineLength,
 		mode: globalSettings.mode || 'default',
-		fillToPreviousMonday: resolveBoolean(globalSettings.fillToPreviousMonday, true),
+		fillToPreviousMonday: resolveBoolean(
+			globalSettings.fillToPreviousMonday,
+			true,
+		),
 	})
 
 	// Initialize unified state
@@ -198,14 +200,8 @@
 		}
 		debugLog(state.settings, state.settings.debug)
 
-		const firstDate = parseISO(state.settings.firstDisplayedDate)
-		const graphStartDate =
-			state.settings.mode === 'graph' && state.settings.fillToPreviousMonday
-				? startOfWeek(firstDate, {weekStartsOn: 1})
-				: firstDate
-
 		state.computed.dates = eachDayOfInterval({
-			start: graphStartDate,
+			start: parseISO(state.settings.firstDisplayedDate),
 			end: parseISO(state.settings.lastDisplayedDate),
 		}).map((date) => getDateAsString(date))
 
@@ -403,7 +399,11 @@
 		// Schedule reload at midnight so dates stay current
 		const scheduleMidnightReload = () => {
 			const now = new Date()
-			const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+			const midnight = new Date(
+				now.getFullYear(),
+				now.getMonth(),
+				now.getDate() + 1,
+			)
 			const msUntilMidnight = midnight.getTime() - now.getTime()
 			midnightTimer = setTimeout(() => {
 				debugLog('Midnight reload triggered', state.settings.debug)
@@ -456,7 +456,9 @@
 	No habits to show at "{state.settings.path}"
 {:else if state.settings.mode === 'graph'}
 	<div
-		class="habit-tracker-graph {state.settings.matchLineLength ? 'habit-tracker-graph--match-line-length' : ''}"
+		class="habit-tracker-graph {state.settings.matchLineLength
+			? 'habit-tracker-graph--match-line-length'
+			: ''}"
 		bind:this={state.ui.rootElement}
 	>
 		{#each state.computed.habits as habit}

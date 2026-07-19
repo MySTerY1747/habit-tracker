@@ -1,12 +1,12 @@
 // TODO Add integration tests with jest
-import {Plugin, Notice, setIcon, App, PluginSettingTab, Setting} from 'obsidian'
+import { Plugin, Notice, setIcon, App, PluginSettingTab, Setting } from 'obsidian'
 import HabitTracker from './HabitTracker.svelte'
 import HabitTrackerError from './HabitTrackerError.svelte'
 import { debugLog, isValidCSSColor } from './utils'
 
-	import {
-		format,
-	} from 'date-fns'
+import {
+	format,
+} from 'date-fns'
 
 interface HabitTrackerSettings {
 	path: string;
@@ -17,7 +17,7 @@ interface HabitTrackerSettings {
 	showStreaks: boolean;
 	openDailyNoteOnClick: boolean;
 	gapStyle: string;
-	mode: string;
+	mode: 'default' | 'graph';
 	fillToPreviousMonday: boolean;
 }
 
@@ -56,15 +56,15 @@ export default class HabitTracker21 extends Plugin {
 				debugLog(`Tracker settings: ${JSON.stringify(userSettings)}`, debugMode);
 				debugLog(`Today is ${format(new Date(), 'yyyy-MM-dd')}`, debugMode);
 				new HabitTracker({
-						target: el,
-						props: {
-							app: this.app,
-							userSettings,
-							globalSettings: this.settings,
-							pluginName: this.manifest.name,
-						},
-					})
-			} catch(error) {
+					target: el,
+					props: {
+						app: this.app,
+						userSettings,
+						globalSettings: this.settings,
+						pluginName: this.manifest.name,
+					},
+				})
+			} catch (error) {
 				new HabitTrackerError({
 					target: el,
 					props: {
@@ -295,14 +295,14 @@ class HabitTrackerSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
-		containerEl.createEl('h3', {text: `${this.plugin.manifest.name} Settings`});
+		containerEl.createEl('h3', { text: `${this.plugin.manifest.name} Settings` });
 
 		// General Settings Section
-		let generalHeader = containerEl.createEl('h4', {text: 'General Settings'});
+		let generalHeader = containerEl.createEl('h4', { text: 'General Settings' });
 		generalHeader.style.marginBottom = '0';
 		const generalDesc = containerEl.createEl('div', {
 			cls: 'setting-item-description',
@@ -402,7 +402,7 @@ class HabitTrackerSettingTab extends PluginSettingTab {
 				.addOption('default', 'Default')
 				.addOption('graph', 'Contribution Graph')
 				.setValue(this.plugin.settings.mode)
-				.onChange(async (value) => {
+				.onChange(async (value: 'default' | 'graph') => {
 					this.plugin.settings.mode = value;
 					await this.plugin.saveSettings();
 				}));
@@ -438,7 +438,7 @@ class HabitTrackerSettingTab extends PluginSettingTab {
 				}));
 
 		// Troubleshooting Section
-		const troubleshootingHeader = containerEl.createEl('h4', {text: 'Troubleshooting'});
+		const troubleshootingHeader = containerEl.createEl('h4', { text: 'Troubleshooting' });
 		troubleshootingHeader.style.marginTop = '30px';
 
 		new Setting(containerEl)
