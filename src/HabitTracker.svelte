@@ -87,6 +87,12 @@
 		fillToPreviousMonday: boolean
 	}>
 
+	const resolveBoolean = (value: unknown, fallback: boolean): boolean => {
+		if (value === true || value === 'true') return true
+		if (value === false || value === 'false') return false
+		return fallback
+	}
+
 	// Default settings - use global settings as defaults
 	const createDefaultSettings = (): HabitTrackerSettings => ({
 		path: globalSettings.path,
@@ -98,10 +104,7 @@
 		debug: globalSettings.debug,
 		matchLineLength: globalSettings.matchLineLength,
 		mode: globalSettings.mode || 'default',
-		fillToPreviousMonday:
-			globalSettings.fillToPreviousMonday !== undefined
-				? globalSettings.fillToPreviousMonday
-				: true,
+		fillToPreviousMonday: resolveBoolean(globalSettings.fillToPreviousMonday, true),
 	})
 
 	// Initialize unified state
@@ -151,10 +154,10 @@
 				userSettings.mode !== undefined
 					? userSettings.mode
 					: state.settings.mode,
-			fillToPreviousMonday:
-				userSettings.fillToPreviousMonday !== undefined
-					? userSettings.fillToPreviousMonday
-					: state.settings.fillToPreviousMonday,
+			fillToPreviousMonday: resolveBoolean(
+				userSettings.fillToPreviousMonday,
+				state.settings.fillToPreviousMonday,
+			),
 		}
 
 		// Apply smart firstDisplayedDate logic
@@ -463,6 +466,7 @@
 				dates={state.computed.dates}
 				debug={state.settings.debug}
 				onGraphScroll={syncGraphScroll}
+				fillToPreviousMonday={state.settings.fillToPreviousMonday}
 				{app}
 				{pluginName}
 				{userSettings}

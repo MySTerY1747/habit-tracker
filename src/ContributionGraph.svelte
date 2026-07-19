@@ -19,12 +19,12 @@
 	export let userSettings
 	export let globalSettings
 	export let onGraphScroll = () => {}
+	export let fillToPreviousMonday = true
 
 	let entries = []
 	let frontmatter = {}
 	let habitName = name
 	let customColor = ''
-	let fillToPreviousMonday = true
 	let cellStyle = ''
 	let savingChanges = false
 	// Keep graph streak badges aligned with default mode behavior (only meaningful multi-day streaks).
@@ -39,13 +39,6 @@
 			customColor = ''
 		}
 	}
-
-	$: fillToPreviousMonday =
-		userSettings.fillToPreviousMonday !== undefined
-			? userSettings.fillToPreviousMonday
-			: globalSettings.fillToPreviousMonday !== undefined
-				? globalSettings.fillToPreviousMonday
-				: true
 
 	$: cellStyle = customColor ? buildGraphCellStyle(customColor) : ''
 
