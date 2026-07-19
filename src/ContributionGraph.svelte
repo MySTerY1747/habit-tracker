@@ -28,7 +28,6 @@
 	export let userSettings
 	export let globalSettings
 	export let onGraphScroll = () => {}
-	export let fillToPreviousMonday = true
 
 	let entries = []
 	let frontmatter = {}
@@ -57,9 +56,9 @@
 		const firstDate = parseISO(dates[0])
 		const lastDate = parseISO(dates[dates.length - 1])
 
-		const weekStart = fillToPreviousMonday
-			? startOfWeek(firstDate, {weekStartsOn: 1})
-			: firstDate
+		// Always align the visual grid to Monday so rows correctly correspond to days of the week,
+		// regardless of the tracked data range.
+		const weekStart = startOfWeek(firstDate, {weekStartsOn: 1})
 
 		const weeks = []
 		const monthStarts = []

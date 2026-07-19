@@ -20,6 +20,7 @@
 		isToday,
 		parseISO,
 		subDays,
+		startOfWeek,
 	} from 'date-fns'
 
 	// TypeScript interfaces for better state management
@@ -189,6 +190,17 @@
 		}
 
 		state.settings = resolvedSettings
+
+		// If graph mode and fillToPreviousMonday is true, push the tracked data range back to Monday
+		if (
+			state.settings.mode === 'graph' &&
+			state.settings.fillToPreviousMonday
+		) {
+			const firstDateObj = parseISO(state.settings.firstDisplayedDate)
+			state.settings.firstDisplayedDate = getDateAsString(
+				startOfWeek(firstDateObj, {weekStartsOn: 1}),
+			)
+		}
 
 		// Only validate essential business logic
 		try {
