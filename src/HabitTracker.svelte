@@ -19,6 +19,7 @@
 		getDate,
 		isToday,
 		parseISO,
+		startOfWeek,
 		subDays,
 	} from 'date-fns'
 
@@ -194,8 +195,14 @@
 		}
 		debugLog(state.settings, state.settings.debug)
 
+		const firstDate = parseISO(state.settings.firstDisplayedDate)
+		const graphStartDate =
+			state.settings.mode === 'graph' && state.settings.fillToPreviousMonday
+				? startOfWeek(firstDate, {weekStartsOn: 1})
+				: firstDate
+
 		state.computed.dates = eachDayOfInterval({
-			start: parseISO(state.settings.firstDisplayedDate),
+			start: graphStartDate,
 			end: parseISO(state.settings.lastDisplayedDate),
 		}).map((date) => getDateAsString(date))
 

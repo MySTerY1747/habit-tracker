@@ -43,7 +43,9 @@
 	$: fillToPreviousMonday =
 		userSettings.fillToPreviousMonday !== undefined
 			? userSettings.fillToPreviousMonday
-			: globalSettings.fillToPreviousMonday
+			: globalSettings.fillToPreviousMonday !== undefined
+				? globalSettings.fillToPreviousMonday
+				: true
 
 	$: cellStyle = customColor ? buildGraphCellStyle(customColor) : ''
 
