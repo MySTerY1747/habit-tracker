@@ -31,6 +31,7 @@
 		debug: boolean
 		matchLineLength: boolean
 		mode: string
+		fillToPreviousMonday: boolean
 	}
 
 	interface HabitData {
@@ -69,6 +70,7 @@
 		openDailyNoteOnClick: boolean
 		gapStyle: string
 		mode: string
+		fillToPreviousMonday: boolean
 	}
 	export let userSettings: Partial<{
 		path: string
@@ -81,6 +83,7 @@
 		showStreaks: boolean
 		gapStyle: string
 		mode: string
+		fillToPreviousMonday: boolean
 	}>
 
 	// Default settings - use global settings as defaults
@@ -94,6 +97,10 @@
 		debug: globalSettings.debug,
 		matchLineLength: globalSettings.matchLineLength,
 		mode: globalSettings.mode || 'default',
+		fillToPreviousMonday:
+			globalSettings.fillToPreviousMonday !== undefined
+				? globalSettings.fillToPreviousMonday
+				: true,
 	})
 
 	// Initialize unified state
@@ -143,6 +150,10 @@
 				userSettings.mode !== undefined
 					? userSettings.mode
 					: state.settings.mode,
+			fillToPreviousMonday:
+				userSettings.fillToPreviousMonday !== undefined
+					? userSettings.fillToPreviousMonday
+					: state.settings.fillToPreviousMonday,
 		}
 
 		// Apply smart firstDisplayedDate logic

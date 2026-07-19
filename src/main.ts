@@ -18,6 +18,7 @@ interface HabitTrackerSettings {
 	openDailyNoteOnClick: boolean;
 	gapStyle: string;
 	mode: string;
+	fillToPreviousMonday: boolean;
 }
 
 const DEFAULT_SETTINGS: HabitTrackerSettings = {
@@ -29,7 +30,8 @@ const DEFAULT_SETTINGS: HabitTrackerSettings = {
 	showStreaks: true,
 	openDailyNoteOnClick: true,
 	gapStyle: 'default',
-	mode: 'default'
+	mode: 'default',
+	fillToPreviousMonday: true
 }
 
 export default class HabitTracker21 extends Plugin {
@@ -402,6 +404,16 @@ class HabitTrackerSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.mode)
 				.onChange(async (value) => {
 					this.plugin.settings.mode = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Fill graph to previous Monday')
+			.setDesc('In contribution graph mode, pad the first week back to Monday so the graph stays square. Can be overridden with "fillToPreviousMonday" in code blocks.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.fillToPreviousMonday)
+				.onChange(async (value) => {
+					this.plugin.settings.fillToPreviousMonday = value;
 					await this.plugin.saveSettings();
 				}));
 
